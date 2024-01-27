@@ -1,0 +1,45 @@
+version: '3.4'
+
+services:
+  mssql:
+        container_name: mssqlco
+        networks:
+            - pnNetwork
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        ports:
+            - 5033:1433
+        volumes:
+            - mssql:/var/opt/mssql
+        environment:
+            - ACCEPT_EULA=Y
+            - MSSQL_SA_PASSWORD=myPass123@
+  pizzanavigator.api:
+    container_name: apic
+    networks:
+            - pnNetwork
+    image: ${DOCKER_REGISTRY-}pizzanavigatorapi
+    ports:
+            - 5020:8080
+            - 5021:8081
+    environment:
+            - ConnectionString_PNDb=Server=mssqlco; Database=PizzaNavigator; User Id=sa; Password=myPass123@; Trust Server Certificate=true;
+    build:
+      context: .
+      dockerfile: PizzaNavigator.API/Dockerfile
+    depends_on:
+            - mssql
+  app:
+   container_name: webappc
+   image: ${DOCKER_REGISTRY-}webapp
+   networks:
+            - pnNetwork
+   ports:
+          - 5023:5173
+   build: ./app
+   depends_on:
+          - pizzanavigator.api
+
+networks:
+    pnNetwork: 
+volumes:
+  mssql:
